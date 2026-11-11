@@ -1,1 +1,128 @@
-9
+
+import datetime
+import ast
+import operator
+import webbrowser
+import os
+
+NAME = "NOVA"
+
+def calculator(expression):
+    allowed = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.Mod: operator.mod
+    }
+
+    try:
+        tree = ast.parse(expression, mode="eval")
+
+        def calculate(node):
+            if isinstance(node, ast.Expression):
+                return calculate(node.body)
+
+            if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+                return node.value
+
+            if isinstance(node, ast.BinOp) and type(node.op) in allowed:
+                return allowed[type(node.op)](
+                    calculate(node.left),
+                    calculate(node.right)
+                )
+
+            if isinstance(node, ast.UnaryOp):
+                if isinstance(node.op, ast.USub):
+                    return -calculate(node.operand)
+                if isinstance(node.op, ast.UAdd):
+                    return calculate(node.operand)
+
+            raise ValueError("Invalid calculation")
+
+        return calculate(tree)
+
+    except Exception:
+        return "Invalid calculation!"
+
+
+def save_note(note):
+    with open("nova_notes.txt", "a", encoding="utf-8") as file:
+        file.write(note + "\n")
+    return "Your note has been saved!"
+
+
+def read_notes():
+    if not os.path.exists("nova_notes.txt"):
+        return "No notes found."
+
+    with open("nova_notes.txt", "r", encoding="utf-8") as file:
+        return file.read()
+
+
+def assistant():
+    print("=" * 40)
+    print("       NOVA AI ASSISTANT")
+    print("       Version 1.0")
+    print("=" * 40)
+
+    print("Hello! I am NOVA.")
+    print("Type 'help' to see commands.")
+    print("Type 'exit' to stop.")
+
+    while True:
+        command = input("\nYou: ").strip()
+        cmd = command.lower()
+
+        if cmd == "exit":
+            print("NOVA: Goodbye!")
+            break
+
+        elif cmd in ["hello", "hi", "hey"]:
+            print("NOVA: Hello! How can I help you?")
+
+        elif cmd == "help":
+            print("""
+AVAILABLE COMMANDS:
+
+hello       - Greeting
+time        - Current time
+date        - Current date
+calc 10+20  - Calculator
+note        - Save a note
+notes       - Read saved notes
+search      - Google search
+help        - Show commands
+exit        - Close assistant
+""")
+
+        elif cmd == "time":
+            print("NOVA:", datetime.datetime.now().strftime("%I:%M:%S %p"))
+
+        elif cmd == "date":
+            print("NOVA:", datetime.date.today())
+
+        elif cmd.startswith("calc "):
+            expression = command[5:]
+            print("NOVA:", calculator(expression))
+
+        elif cmd.startswith("note "):
+            print("NOVA:", save_note(command[5:]))
+
+        elif cmd == "notes":
+            print("NOVA:", read_notes())
+
+        elif cmd.startswith("search "):
+            query = command[7:]
+            url = "https://www.google.com/search?q=" + query.replace(" ", "+")
+            webbrowser.open(url)
+            print("NOVA: Search opened.")
+
+        else:
+            print("NOVA: I don't know this command yet.")
+            print("Type 'help' for available commands.")
+
+
+if __name__ == "__main__":
+    assistant()
